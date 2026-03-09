@@ -396,23 +396,31 @@ export default function StaffManagementPage() {
                 </CardTitle>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <select
-                    className="h-10 rounded-md border px-3"
+                    className="h-10 rounded-md border px-3 bg-white text-black dark:bg-slate-800 dark:text-white dark:border-slate-700"
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                      <option key={m} value={m}>
+                      <option
+                        className="dark:bg-slate-800 dark:text-white"
+                        key={m}
+                        value={m}
+                      >
                         Tháng {m}
                       </option>
                     ))}
                   </select>
                   <select
-                    className="h-10 rounded-md border px-3"
+                    className="h-10 rounded-md border px-3 bg-white text-black dark:bg-slate-800 dark:text-white dark:border-slate-700"
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
                   >
                     {[2024, 2025, 2026, 2027].map((y) => (
-                      <option key={y} value={y}>
+                      <option
+                        className="dark:bg-slate-800 dark:text-white"
+                        key={y}
+                        value={y}
+                      >
                         Năm {y}
                       </option>
                     ))}
@@ -581,14 +589,24 @@ export default function StaffManagementPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Phân quyền</label>
               <select
-                className="flex h-10 w-full rounded-md border px-3"
+                className="flex h-10 w-full rounded-md border px-3 bg-white text-black dark:bg-slate-800 dark:text-white dark:border-slate-700"
                 value={formData.role}
                 onChange={(e) =>
                   setFormData({ ...formData, role: e.target.value })
                 }
               >
-                <option value="STAFF">Lễ tân</option>
-                <option value="ADMIN">Quản lý</option>
+                <option
+                  className="dark:bg-slate-800 dark:text-white"
+                  value="STAFF"
+                >
+                  Lễ tân
+                </option>
+                <option
+                  className="dark:bg-slate-800 dark:text-white"
+                  value="ADMIN"
+                >
+                  Quản lý
+                </option>
               </select>
             </div>
           </div>

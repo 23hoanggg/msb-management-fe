@@ -496,17 +496,25 @@ export default function MenuManagementPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Danh mục</label>
               <select
-                className="flex h-10 w-full rounded-md border px-3"
+                className="flex h-10 w-full rounded-md border px-3 bg-white text-black dark:bg-slate-800 dark:text-white dark:border-slate-700"
                 value={productData.categoryId}
                 onChange={(e) =>
                   setProductData({ ...productData, categoryId: e.target.value })
                 }
               >
-                <option value="" disabled>
+                <option
+                  className="dark:bg-slate-800 dark:text-white"
+                  value=""
+                  disabled
+                >
                   -- Chọn --
                 </option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option
+                    className="dark:bg-slate-800 dark:text-white"
+                    key={c.id}
+                    value={c.id}
+                  >
                     {c.name}
                   </option>
                 ))}

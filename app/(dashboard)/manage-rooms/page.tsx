@@ -388,17 +388,25 @@ export default function ManageRoomsPage() {
                   Loại phòng <span className="text-red-500">*</span>
                 </label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-foreground"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-foreground dark:bg-slate-800 dark:text-white dark:border-slate-700"
                   value={formData.typeId}
                   onChange={(e) =>
                     setFormData({ ...formData, typeId: e.target.value })
                   }
                 >
-                  <option value="" disabled>
+                  <option
+                    className="dark:bg-slate-800 dark:text-white"
+                    value=""
+                    disabled
+                  >
                     -- Chọn loại --
                   </option>
                   {roomTypes.map((rt) => (
-                    <option key={rt.id} value={rt.id}>
+                    <option
+                      className="dark:bg-slate-800 dark:text-white"
+                      key={rt.id}
+                      value={rt.id}
+                    >
                       {rt.name} - {rt.basePrice.toLocaleString()}đ/h
                     </option>
                   ))}
@@ -415,15 +423,30 @@ export default function ManageRoomsPage() {
                   Trạng thái hiện tại
                 </label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-foreground"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-foreground dark:bg-slate-800 dark:text-white dark:border-slate-700"
                   value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })
                   }
                 >
-                  <option value="AVAILABLE">Trống (Sẵn sàng)</option>
-                  <option value="OCCUPIED">Có khách</option>
-                  <option value="REPAIRING">Bảo trì / Hỏng</option>
+                  <option
+                    className="dark:bg-slate-800 dark:text-white"
+                    value="AVAILABLE"
+                  >
+                    Trống (Sẵn sàng)
+                  </option>
+                  <option
+                    className="dark:bg-slate-800 dark:text-white"
+                    value="OCCUPIED"
+                  >
+                    Có khách
+                  </option>
+                  <option
+                    className="dark:bg-slate-800 dark:text-white"
+                    value="REPAIRING"
+                  >
+                    Bảo trì / Hỏng
+                  </option>
                 </select>
               </div>
             </div>

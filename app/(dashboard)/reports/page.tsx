@@ -178,15 +178,26 @@ export default function ReportsPage() {
 
         <div className="flex gap-2">
           <select
-            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground"
+            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground dark:bg-slate-800 dark:text-white dark:border-slate-700"
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
             disabled={loading}
           >
-            <option value="today">Hôm nay</option>
-            <option value="7days">7 ngày qua</option>
-            <option value="thisMonth">Tháng này</option>
-            <option value="all">Toàn thời gian</option>
+            <option className="dark:bg-slate-800 dark:text-white" value="today">
+              Hôm nay
+            </option>
+            <option className="dark:bg-slate-800 dark:text-white" value="7days">
+              7 ngày qua
+            </option>
+            <option
+              className="dark:bg-slate-800 dark:text-white"
+              value="thisMonth"
+            >
+              Tháng này
+            </option>
+            <option className="dark:bg-slate-800 dark:text-white" value="all">
+              Toàn thời gian
+            </option>
           </select>
 
           <Button
