@@ -23,9 +23,11 @@ export default function TvScreenPage() {
   useEffect(() => {
     const initializeTv = async () => {
       try {
-        const BACKEND_URL =
+        const rawUrl =
           process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
-        const roomsRes = await fetch(`${BACKEND_URL}:3001/api/rooms`);
+        const BACKEND_URL = rawUrl.replace(/\/$/, "");
+
+        const roomsRes = await fetch(`${BACKEND_URL}/api/rooms`);
         const roomsData = await roomsRes.json();
         const roomsList = roomsData.data || roomsData || [];
 
@@ -34,7 +36,6 @@ export default function TvScreenPage() {
             r.id === urlRoomIdentifier ||
             r.name.toLowerCase() === urlRoomIdentifier.toLowerCase(),
         );
-
         if (currentRoom) {
           setRoom(currentRoom);
           const BACKEND_URL =
