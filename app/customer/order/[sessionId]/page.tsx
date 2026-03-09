@@ -258,11 +258,9 @@ export default function CustomerOrderPage() {
               <Music className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-widest">
-                KARAOKE POS
-              </h1>
+              <h1 className="text-xl font-black tracking-widest">Music Box</h1>
               <p className="text-[11px] text-purple-100 uppercase tracking-widest">
-                Thực đơn điện tử
+                Menu
               </p>
             </div>
           </div>

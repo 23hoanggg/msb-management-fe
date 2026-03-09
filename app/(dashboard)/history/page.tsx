@@ -298,8 +298,8 @@ export default function ReceiptHistoryPage() {
       {selectedSession && (
         <div className="hidden print:block text-black bg-white w-[80mm] font-mono text-sm mx-auto">
           <div className="text-center mb-4">
-            <h2 className="text-xl font-bold uppercase">KARAOKE POS</h2>
-            <p className="text-xs">123 Đường ABC, Quận XYZ</p>
+            <h2 className="text-xl font-bold uppercase">MUSIC BOX</h2>
+            <p className="text-xs">HÀM NGHI, MỸ ĐÌNH, NAM TỪ LIÊM, HÀ NỘI</p>
             <p className="text-xs">SĐT: 0123.456.789</p>
           </div>
 
@@ -378,7 +378,7 @@ export default function ReceiptHistoryPage() {
 
           <div className="text-center mt-6 text-xs italic">
             <p>Cảm ơn quý khách và hẹn gặp lại!</p>
-            <p>Powered by Karaoke POS</p>
+            <p>Powered bY Music Box</p>
           </div>
         </div>
       )}

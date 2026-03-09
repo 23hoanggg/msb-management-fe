@@ -143,10 +143,11 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-foreground">
-            Sơ đồ phòng hát (POS)
+            Quản lý phòng
           </h2>
           <p className="text-muted-foreground mt-1">
-            Quản lý hoạt động của các phòng hát trong quán.
+            {" "}
+            Danh sách và trạng thái các phòng
           </p>
         </div>
         <div className="flex gap-4">

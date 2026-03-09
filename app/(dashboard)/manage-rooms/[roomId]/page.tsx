@@ -799,8 +799,10 @@ export default function RoomDetailPage() {
           }}
         >
           <div className="text-center mb-4">
-            <h2 className="text-xl font-bold uppercase mb-1">KARAOKE POS</h2>
-            <p className="text-xs m-0">123 Đường ABC, Quận XYZ</p>
+            <h2 className="text-xl font-bold uppercase mb-1">MUSIC BOX</h2>
+            <p className="text-xs m-0">
+              HÀM NGHI, MỸ ĐÌNH, NAM TỪ LIÊM, HÀ NỘI
+            </p>
             <p className="text-xs m-0">SĐT: 0123.456.789</p>
           </div>
 
@@ -879,7 +881,7 @@ export default function RoomDetailPage() {
 
           <div className="text-center mt-6 text-[10px] italic">
             <p className="m-0">Cảm ơn quý khách và hẹn gặp lại!</p>
-            <p className="m-0">Powered by Karaoke POS</p>
+            <p className="m-0">Powered by Music Box</p>
           </div>
         </div>
       </div>
