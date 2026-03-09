@@ -32,7 +32,9 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
-    const socket: Socket = io("http://localhost:3001");
+    const BACKEND_URL =
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+    const socket: Socket = io(BACKEND_URL);
 
     socket.on("new-order", (data) => {
       const newNotif: Notification = {
