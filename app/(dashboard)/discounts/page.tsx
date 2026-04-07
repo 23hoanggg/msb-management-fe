@@ -192,7 +192,7 @@ export default function DiscountManagementPage() {
     } catch (error: any) {
       toast.error(
         error.response?.data?.message ||
-          "Có lỗi xảy ra (Có thể mã đã tồn tại)!",
+        "Có lỗi xảy ra (Có thể mã đã tồn tại)!",
       );
     } finally {
       setIsSubmitting(false);
@@ -224,7 +224,7 @@ export default function DiscountManagementPage() {
     } catch (error: any) {
       toast.error(
         error.response?.data?.message ||
-          "Không thể xóa vì mã này đã được sử dụng trong hóa đơn!",
+        "Không thể xóa vì mã này đã được sử dụng trong hóa đơn!",
       );
     } finally {
       setIsSubmitting(false);

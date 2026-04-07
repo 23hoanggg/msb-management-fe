@@ -90,7 +90,7 @@ export default function TvScreenPage() {
                   (s: any) => s.roomId === realRoomId,
                 );
                 setSessionId(session ? session.id : null);
-              } catch (e) {}
+              } catch (e) { }
             }, 1000);
           } else if (data.status === "AVAILABLE") {
             setSessionId(null);
