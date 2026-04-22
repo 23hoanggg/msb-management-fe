@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image"; // 🟢 THÊM IMPORT IMAGE TẠI ĐÂY
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,13 +30,15 @@ import {
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
 import { QRCodeSVG } from "qrcode.react";
-import { useReactToPrint } from "react-to-print"; // 🟢 Import thư viện in
+import { useReactToPrint } from "react-to-print";
 
+// 🟢 ĐÃ SỬA: Thêm imageUrl vào interface để hết lỗi gạch đỏ
 interface Product {
   id: string;
   name: string;
   price: number;
   stockQuantity: number;
+  imageUrl?: string | null;
 }
 interface OrderItem {
   id: string;
@@ -74,7 +77,6 @@ export default function RoomDetailPage() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
 
-  // 🟢 Ref để React To Print biết cần "chụp" component nào
   const componentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,7 +152,6 @@ export default function RoomDetailPage() {
     };
   }, [session]);
 
-  // CÁC HÀM THAO TÁC MÓN
   const handleAddOrder = async (productId: string, qty: number = 1) => {
     if (!session) return;
     try {
@@ -256,12 +257,10 @@ export default function RoomDetailPage() {
     }
   };
 
-  // 🟢 Cấu hình hook react-to-print
   const handlePrint = useReactToPrint({
-    contentRef: componentRef, // Sửa lỗi version mới: dùng contentRef thay vì content
+    contentRef: componentRef,
     documentTitle: `Hoa_Don_${session?.room?.name || "Karaoke"}`,
     onAfterPrint: () => {
-      // Sau khi in xong (hoặc cancel), ẩn modal và về trang chủ
       setShowReceipt(false);
       router.push("/");
     },
@@ -272,7 +271,6 @@ export default function RoomDetailPage() {
     router.push("/");
   };
 
-  // Tính toán trước khi in
   const totalServiceFee = orderItems.reduce(
     (sum, item) => sum + item.quantity * item.priceAtTime,
     0,
@@ -317,9 +315,7 @@ export default function RoomDetailPage() {
 
   return (
     <>
-      {/* 1. GIAO DIỆN APP CHÍNH */}
       <div className="flex flex-col h-[calc(100vh-80px)] space-y-4">
-        {/* HEADER TÊN PHÒNG & NÚT LẤY QR */}
         <div className="flex items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-4">
             <Button
@@ -341,16 +337,15 @@ export default function RoomDetailPage() {
                 Đang hát: {durationMinutes} phút (Từ{" "}
                 {session
                   ? new Date(session.startTime).toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
                   : "--:--"}
                 )
               </p>
             </div>
           </div>
 
-          {/* NÚT LẤY MÃ QR ĐỘNG Ở GÓC PHẢI */}
           {session && (
             <Button
               onClick={() => setShowQrModal(true)}
@@ -381,7 +376,6 @@ export default function RoomDetailPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: PHỤC VỤ */}
           <TabsContent
             value="service"
             className="flex-1 data-[state=active]:flex flex-col min-h-0 overflow-hidden m-0"
@@ -537,19 +531,32 @@ export default function RoomDetailPage() {
                     {products.map((product) => (
                       <Card
                         key={product.id}
-                        className="cursor-pointer bg-card hover:border-primary shadow-sm hover:shadow-md border border-transparent transition-all"
+                        className="cursor-pointer bg-card hover:border-primary shadow-sm hover:shadow-md border border-transparent transition-all overflow-hidden"
                         onClick={() => handleAddOrder(product.id, 1)}
                       >
                         <CardContent className="p-4 text-center space-y-3">
-                          <div className="h-20 bg-muted/50 rounded-xl flex items-center justify-center text-4xl shadow-inner">
-                            {product.name.toLowerCase().includes("bia")
-                              ? "🍺"
-                              : product.name.toLowerCase().includes("nước")
-                                ? "🥤"
-                                : "🍉"}
+                          <div className="relative h-24 bg-muted/50 rounded-xl flex items-center justify-center overflow-hidden shadow-inner w-full">
+                            {product.imageUrl ? (
+                              <Image
+                                src={product.imageUrl}
+                                alt={product.name}
+                                fill
+                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                                className="object-cover hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <span className="text-4xl">
+                                {product.name.toLowerCase().includes("bia")
+                                  ? "🍺"
+                                  : product.name.toLowerCase().includes("nước")
+                                    ? "🥤"
+                                    : "🍉"}
+                              </span>
+                            )}
                           </div>
+
                           <div>
-                            <p className="font-bold text-foreground line-clamp-1">
+                            <p className="font-bold text-foreground line-clamp-1" title={product.name}>
                               {product.name}
                             </p>
                             <p className="text-sm text-primary font-bold">
@@ -565,7 +572,6 @@ export default function RoomDetailPage() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: THANH TOÁN */}
           <TabsContent
             value="billing"
             className="flex-1 data-[state=active]:flex flex-col min-h-0 overflow-hidden m-0"
@@ -717,7 +723,6 @@ export default function RoomDetailPage() {
         </Tabs>
       </div>
 
-      {/* MODAL 1: HIỂN THỊ MÃ QR GỌI MÓN ĐỘNG */}
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
         <DialogContent className="sm:max-w-[400px] text-center">
           <DialogHeader>
@@ -743,7 +748,6 @@ export default function RoomDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* MODAL 2: XEM TRƯỚC HÓA ĐƠN TRƯỚC KHI IN */}
       <Dialog
         open={showReceipt}
         onOpenChange={(open) => {
@@ -777,7 +781,7 @@ export default function RoomDetailPage() {
             </Button>
 
             <Button
-              onClick={() => handlePrint()} // 🟢 Gọi hàm in từ react-to-print
+              onClick={() => handlePrint()}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
             >
               <Printer className="w-4 h-4 mr-2" /> In Hóa Đơn
@@ -786,7 +790,6 @@ export default function RoomDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 🟢 KHU VỰC CHỨA COMPONENT HÓA ĐƠN (Được ẩn đi, chỉ dành cho in) */}
       <div style={{ display: "none" }}>
         <div
           ref={componentRef}
@@ -817,9 +820,9 @@ export default function RoomDetailPage() {
               <span>
                 {session
                   ? new Date(session.startTime).toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
                   : ""}
               </span>
             </div>
