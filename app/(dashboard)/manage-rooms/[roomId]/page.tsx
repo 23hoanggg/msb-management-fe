@@ -134,23 +134,31 @@ export default function RoomDetailPage() {
   }, [session]);
 
   useEffect(() => {
-    if (!session) return;
-    const BACKEND_URL =
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+    if (!session?.id) return;
 
-    const socket: Socket = io(BACKEND_URL);
+    const rawUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+    const BACKEND_URL = rawUrl.replace(/\/$/, "");
+
+    const socket: Socket = io(BACKEND_URL, {
+      transports: ["websocket", "polling"],
+    });
+
     socket.on("new-order", (data: { sessionId: string }) => {
       if (data.sessionId === session.id) {
+        // Thông báo cho nhân viên biết
         toast.info("🔔 Khách hàng vừa gọi món mới!", {
           style: { background: "#3b82f6", color: "white" },
         });
+
         fetchOrderItems(session.id);
       }
     });
+
     return () => {
       socket.disconnect();
     };
-  }, [session]);
+  }, [session?.id]);
 
   const handleAddOrder = async (productId: string, qty: number = 1) => {
     if (!session) return;
@@ -337,9 +345,9 @@ export default function RoomDetailPage() {
                 Đang hát: {durationMinutes} phút (Từ{" "}
                 {session
                   ? new Date(session.startTime).toLocaleTimeString("vi-VN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
                   : "--:--"}
                 )
               </p>
@@ -556,7 +564,10 @@ export default function RoomDetailPage() {
                           </div>
 
                           <div>
-                            <p className="font-bold text-foreground line-clamp-1" title={product.name}>
+                            <p
+                              className="font-bold text-foreground line-clamp-1"
+                              title={product.name}
+                            >
                               {product.name}
                             </p>
                             <p className="text-sm text-primary font-bold">
@@ -820,9 +831,9 @@ export default function RoomDetailPage() {
               <span>
                 {session
                   ? new Date(session.startTime).toLocaleTimeString("vi-VN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
                   : ""}
               </span>
             </div>

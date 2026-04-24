@@ -21,7 +21,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   Search,
@@ -31,8 +30,6 @@ import {
   Users,
   ShieldAlert,
   UserCheck,
-  Banknote,
-  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,29 +42,10 @@ interface User {
   createdAt: string;
 }
 
-interface Salary {
-  id: string;
-  userId: string;
-  month: number;
-  year: number;
-  baseSalary: number;
-  bonus: number;
-  deduction: number;
-  totalSalary: number;
-  isPaid: boolean;
-  paidAt?: string;
-  note?: string;
-  user?: { fullName: string; username: string; role: string };
-}
-
 export default function StaffManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [salaries, setSalaries] = useState<Salary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,24 +58,13 @@ export default function StaffManagementPage() {
     role: "STAFF",
   });
 
-  // States Lương
-  const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
-  const [salaryForm, setSalaryForm] = useState({
-    userId: "",
-    baseSalary: 0,
-    bonus: 0,
-    deduction: 0,
-    note: "",
-  });
-
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // --- 1. LẤY DỮ LIỆU ---
   useEffect(() => {
     fetchUsers();
-    fetchSalaries();
-  }, [selectedMonth, selectedYear]);
+  }, []);
 
   const fetchUsers = async () => {
     try {
@@ -111,27 +78,13 @@ export default function StaffManagementPage() {
     }
   };
 
-  const fetchSalaries = async () => {
-    try {
-      const res = await api.get(
-        `/salaries?month=${selectedMonth}&year=${selectedYear}`,
-      );
-      setSalaries(res.data?.data || res.data || []);
-    } catch (error) {
-      toast.error("Không thể tải danh sách lương!");
-    }
-  };
-
   const filteredUsers = users.filter(
     (u) =>
       u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.username.toLowerCase().includes(searchTerm.toLowerCase()),
   );
-  const filteredSalaries = salaries.filter((s) =>
-    s.user?.fullName.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
 
-  // --- FORM TÀI KHOẢN ---
+  // --- 2. FORM TÀI KHOẢN ---
   const handleOpenUserForm = (user?: User) => {
     if (user) {
       setEditingId(user.id);
@@ -206,62 +159,6 @@ export default function StaffManagementPage() {
     }
   };
 
-  // --- FORM LƯƠNG ---
-  const handleOpenSalaryForm = (salary?: Salary) => {
-    if (salary) {
-      setSalaryForm({
-        userId: salary.userId,
-        baseSalary: salary.baseSalary,
-        bonus: salary.bonus,
-        deduction: salary.deduction,
-        note: salary.note || "",
-      });
-    } else {
-      setSalaryForm({
-        userId: users.length > 0 ? users[0].id : "",
-        baseSalary: 5000000,
-        bonus: 0,
-        deduction: 0,
-        note: "",
-      });
-    }
-    setIsSalaryModalOpen(true);
-  };
-
-  const handleSubmitSalary = async () => {
-    if (!salaryForm.userId || salaryForm.baseSalary < 0)
-      return toast.error(
-        "Vui lòng chọn nhân viên và nhập lương cơ bản hợp lệ!",
-      );
-
-    try {
-      setIsSubmitting(true);
-      await api.post("/salaries/upsert", {
-        ...salaryForm,
-        month: selectedMonth,
-        year: selectedYear,
-      });
-      toast.success(`Đã lưu lương tháng ${selectedMonth}/${selectedYear}!`);
-      setIsSalaryModalOpen(false);
-      fetchSalaries();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi lưu bảng lương!");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handlePaySalary = async (id: string) => {
-    if (!confirm("Xác nhận đã thanh toán lương cho nhân viên này?")) return;
-    try {
-      await api.patch(`/salaries/${id}/pay`);
-      toast.success("Thanh toán thành công!");
-      fetchSalaries();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi thanh toán!");
-    }
-  };
-
   if (loading)
     return (
       <div className="flex justify-center items-center h-[calc(100vh-100px)]">
@@ -274,266 +171,111 @@ export default function StaffManagementPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
-            Nhân sự & Bảng lương
+            Quản lý Nhân sự
           </h2>
           <p className="text-muted-foreground mt-1">
-            Quản lý tài khoản và chi trả lương nhân viên.
+            Quản lý danh sách tài khoản và phân quyền truy cập hệ thống.
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="accounts" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-          <TabsTrigger value="accounts" className="text-base font-medium">
-            <Users className="w-4 h-4 mr-2" /> Tài khoản
-          </TabsTrigger>
-          <TabsTrigger value="salaries" className="text-base font-medium">
-            <Banknote className="w-4 h-4 mr-2" /> Bảng lương
-          </TabsTrigger>
-        </TabsList>
-
-        {/* ======================= TAB 1: TÀI KHOẢN ======================= */}
-        <TabsContent value="accounts" className="space-y-4 m-0 outline-none">
-          <Card className="border-border bg-card shadow-sm">
-            <CardHeader className="border-b bg-muted/20 pb-4">
-              <div className="flex justify-between items-center gap-4">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" /> Tài khoản (
-                  {filteredUsers.length})
-                </CardTitle>
-                <div className="flex gap-2">
-                  <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Tìm tên..."
-                      className="pl-9"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <Button onClick={() => handleOpenUserForm()}>
-                    <Plus className="w-5 h-5 mr-1" /> Thêm mới
-                  </Button>
-                </div>
+      <Card className="border-border bg-card shadow-sm">
+        <CardHeader className="border-b bg-muted/20 pb-4">
+          <div className="flex justify-between items-center gap-4">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" /> Danh sách tài khoản (
+              {filteredUsers.length})
+            </CardTitle>
+            <div className="flex gap-2">
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm tên nhân viên..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead className="font-bold pl-6">Họ và Tên</TableHead>
-                    <TableHead className="font-bold">Tên đăng nhập</TableHead>
-                    <TableHead className="font-bold">Email</TableHead>
-                    <TableHead className="text-center font-bold">
-                      Chức vụ
-                    </TableHead>
-                    <TableHead className="text-right font-bold pr-6">
-                      Thao tác
-                    </TableHead>
+              <Button onClick={() => handleOpenUserForm()}>
+                <Plus className="w-5 h-5 mr-1" /> Thêm mới
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead className="font-bold pl-6 py-4">Họ và Tên</TableHead>
+                <TableHead className="font-bold">Tên đăng nhập</TableHead>
+                <TableHead className="font-bold">Email</TableHead>
+                <TableHead className="text-center font-bold">Chức vụ</TableHead>
+                <TableHead className="text-right font-bold pr-6">
+                  Thao tác
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="h-32 text-center text-muted-foreground"
+                  >
+                    Không tìm thấy tài khoản nào.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="pl-6 font-bold">
+                      {user.fullName}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user.username}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user.email}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {user.role === "ADMIN" ? (
+                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 mx-auto w-max flex items-center gap-1.5">
+                          <ShieldAlert className="w-3 h-3" /> Quản lý
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 mx-auto w-max flex items-center gap-1.5">
+                          <UserCheck className="w-3 h-3" /> Lễ tân
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right pr-4">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-blue-600 hover:bg-blue-50"
+                        onClick={() => handleOpenUserForm(user)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          setDeletingId(user.id);
+                          setIsDeleteModalOpen(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="pl-6 font-bold">
-                        {user.fullName}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {user.username}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {user.email}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {user.role === "ADMIN" ? (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 mx-auto w-max">
-                            <ShieldAlert className="w-3 h-3 inline mr-1" /> Quản
-                            lý
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 mx-auto w-max">
-                            <UserCheck className="w-3 h-3 inline mr-1" /> Lễ tân
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right pr-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-blue-600"
-                          onClick={() => handleOpenUserForm(user)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600"
-                          onClick={() => {
-                            setDeletingId(user.id);
-                            setIsDeleteModalOpen(true);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ======================= TAB 2: BẢNG LƯƠNG ======================= */}
-        <TabsContent value="salaries" className="space-y-4 m-0 outline-none">
-          <Card className="border-border bg-card shadow-sm">
-            <CardHeader className="border-b bg-muted/20 pb-4">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Banknote className="w-5 h-5 text-green-600" /> Bảng lương
-                  tháng {selectedMonth}/{selectedYear}
-                </CardTitle>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <select
-                    className="h-10 rounded-md border px-3 bg-white text-black dark:bg-slate-800 dark:text-white dark:border-slate-700"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                      <option
-                        className="dark:bg-slate-800 dark:text-white"
-                        key={m}
-                        value={m}
-                      >
-                        Tháng {m}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="h-10 rounded-md border px-3 bg-white text-black dark:bg-slate-800 dark:text-white dark:border-slate-700"
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  >
-                    {[2024, 2025, 2026, 2027].map((y) => (
-                      <option
-                        className="dark:bg-slate-800 dark:text-white"
-                        key={y}
-                        value={y}
-                      >
-                        Năm {y}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    onClick={() => handleOpenSalaryForm()}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> Chấm lương
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead className="font-bold pl-6">Nhân viên</TableHead>
-                    <TableHead className="text-right font-bold">
-                      Lương cơ bản
-                    </TableHead>
-                    <TableHead className="text-right font-bold text-green-600">
-                      + Thưởng
-                    </TableHead>
-                    <TableHead className="text-right font-bold text-red-600">
-                      - Khấu trừ
-                    </TableHead>
-                    <TableHead className="text-right font-bold text-primary text-lg">
-                      Thực lĩnh
-                    </TableHead>
-                    <TableHead className="text-center font-bold">
-                      Trạng thái
-                    </TableHead>
-                    <TableHead className="text-right font-bold pr-6">
-                      Thao tác
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSalaries.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="h-32 text-center text-muted-foreground"
-                      >
-                        Chưa có dữ liệu lương tháng này.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredSalaries.map((s) => (
-                      <TableRow key={s.id}>
-                        <TableCell className="pl-6 font-medium">
-                          {s.user?.fullName}{" "}
-                          <span className="text-xs text-muted-foreground block">
-                            {s.user?.role}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {s.baseSalary.toLocaleString()}đ
-                        </TableCell>
-                        <TableCell className="text-right text-green-600">
-                          {s.bonus > 0 ? `+${s.bonus.toLocaleString()}đ` : "-"}
-                        </TableCell>
-                        <TableCell className="text-right text-red-600">
-                          {s.deduction > 0
-                            ? `-${s.deduction.toLocaleString()}đ`
-                            : "-"}
-                        </TableCell>
-                        <TableCell className="text-right font-black text-primary text-lg">
-                          {s.totalSalary.toLocaleString()}đ
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {s.isPaid ? (
-                            <span className="text-green-600 font-bold text-xs bg-green-100 px-2 py-1 rounded">
-                              <CheckCircle2 className="w-3 h-3 inline mr-1" />
-                              Đã trả
-                            </span>
-                          ) : (
-                            <span className="text-orange-600 font-bold text-xs bg-orange-100 px-2 py-1 rounded">
-                              Chưa trả
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right pr-4">
-                          {!s.isPaid && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-green-600 mr-2"
-                              onClick={() => handlePaySalary(s.id)}
-                            >
-                              Thanh toán
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-blue-600"
-                            onClick={() => handleOpenSalaryForm(s)}
-                            disabled={s.isPaid}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* MODAL TÀI KHOẢN */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
@@ -548,6 +290,7 @@ export default function StaffManagementPage() {
               <label className="text-sm font-medium">Họ và Tên</label>
               <Input
                 value={formData.fullName}
+                placeholder="VD: Nguyễn Văn A"
                 onChange={(e) =>
                   setFormData({ ...formData, fullName: e.target.value })
                 }
@@ -558,6 +301,7 @@ export default function StaffManagementPage() {
                 <label className="text-sm font-medium">Username</label>
                 <Input
                   value={formData.username}
+                  placeholder="VD: staff_01"
                   disabled={!!editingId}
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
@@ -580,6 +324,7 @@ export default function StaffManagementPage() {
               <label className="text-sm font-medium">Email</label>
               <Input
                 type="email"
+                placeholder="VD: staff@musicbox.com"
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
@@ -595,135 +340,38 @@ export default function StaffManagementPage() {
                   setFormData({ ...formData, role: e.target.value })
                 }
               >
-                <option
-                  className="dark:bg-slate-800 dark:text-white"
-                  value="STAFF"
-                >
-                  Lễ tân
-                </option>
-                <option
-                  className="dark:bg-slate-800 dark:text-white"
-                  value="ADMIN"
-                >
-                  Quản lý
-                </option>
+                <option value="STAFF">Nhân viên Lễ tân</option>
+                <option value="ADMIN">Quản lý (Admin)</option>
               </select>
             </div>
           </div>
           <DialogFooter>
             <Button onClick={handleSubmitUser} disabled={isSubmitting}>
-              {isSubmitting && (
+              {isSubmitting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}{" "}
-              Lưu
+              ) : (
+                <UserCheck className="w-4 h-4 mr-2" />
+              )}
+              {editingId ? "Cập nhật" : "Tạo tài khoản"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* MODAL LƯƠNG */}
-      <Dialog open={isSalaryModalOpen} onOpenChange={setIsSalaryModalOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>
-              Chấm lương tháng {selectedMonth}/{selectedYear}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Nhân viên</label>
-              <select
-                className="flex h-10 w-full rounded-md border px-3"
-                value={salaryForm.userId}
-                onChange={(e) =>
-                  setSalaryForm({ ...salaryForm, userId: e.target.value })
-                }
-              >
-                <option value="" disabled>
-                  -- Chọn nhân viên --
-                </option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName} ({u.role})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Lương cơ bản (VNĐ)</label>
-              <Input
-                type="number"
-                min="0"
-                value={salaryForm.baseSalary}
-                onChange={(e) =>
-                  setSalaryForm({
-                    ...salaryForm,
-                    baseSalary: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-green-600">
-                  Thưởng / Phụ cấp
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={salaryForm.bonus}
-                  onChange={(e) =>
-                    setSalaryForm({
-                      ...salaryForm,
-                      bonus: Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-red-600">
-                  Khấu trừ / Tạm ứng
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={salaryForm.deduction}
-                  onChange={(e) =>
-                    setSalaryForm({
-                      ...salaryForm,
-                      deduction: Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ghi chú (Tùy chọn)</label>
-              <Input
-                placeholder="VD: Phạt đi trễ ngày 15/03"
-                value={salaryForm.note}
-                onChange={(e) =>
-                  setSalaryForm({ ...salaryForm, note: e.target.value })
-                }
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleSubmitSalary} disabled={isSubmitting}>
-              {isSubmitting && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}{" "}
-              Lưu bảng lương
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      {/* MODAL XÓA */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="text-red-600">Xác nhận xóa</DialogTitle>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5" /> Xác nhận xóa
+            </DialogTitle>
           </DialogHeader>
+          <div className="py-4">
+            <p className="text-slate-600">
+              Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không
+              thể hoàn tác.
+            </p>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -736,6 +384,11 @@ export default function StaffManagementPage() {
               onClick={handleConfirmDelete}
               disabled={isSubmitting}
             >
+              {isSubmitting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
               Xóa vĩnh viễn
             </Button>
           </DialogFooter>

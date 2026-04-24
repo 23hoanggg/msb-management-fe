@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { io, Socket } from "socket.io-client";
 import {
   Dialog,
@@ -72,25 +71,36 @@ export default function CustomerOrderPage() {
   }, [sessionId]);
 
   useEffect(() => {
-    const BACKEND_URL =
+    if (!sessionId) return;
+
+    const rawUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
-    const socket: Socket = io(BACKEND_URL);
+    const BACKEND_URL = rawUrl.replace(/\/$/, "");
+
+    const socket: Socket = io(BACKEND_URL, {
+      transports: ["websocket", "polling"],
+    });
 
     socket.on("order-status-changed", (data: { sessionId: string }) => {
       if (data.sessionId === sessionId) {
         fetchOrderedItems();
-
         toast.success("Món ăn của bạn đang được mang vào phòng!", {
           icon: "🛎️",
           style: { background: "#10b981", color: "white" },
+          duration: 5000,
         });
       }
+    });
+
+    socket.on("room-status-changed", () => {
+      fetchOrderedItems();
     });
 
     return () => {
       socket.disconnect();
     };
   }, [sessionId]);
+
   const fetchMenu = async () => {
     try {
       const BACKEND_URL =
@@ -170,7 +180,7 @@ export default function CustomerOrderPage() {
     return sum + (p ? p.price * qty : 0);
   }, 0);
 
-  // --- GỬI ĐƠN HÀNG LÊN BACKEND ---
+  // --- GỬI ĐƠN HÀNG LÊN BACKEND (Bằng Promise.all) ---
   const handleSubmitOrder = async () => {
     const itemsToOrder = Object.entries(localCart);
     if (itemsToOrder.length === 0) return;
@@ -284,10 +294,11 @@ export default function CustomerOrderPage() {
       <div className="sticky top-[88px] z-10 bg-slate-50/90 backdrop-blur-md py-3 px-4 overflow-x-auto whitespace-nowrap hide-scrollbar border-b border-slate-200/50">
         <div className="flex gap-2">
           <button
-            className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${activeCategory === "ALL"
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 scale-105"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
-              }`}
+            className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+              activeCategory === "ALL"
+                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 scale-105"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+            }`}
             onClick={() => setActiveCategory("ALL")}
           >
             Tất cả
@@ -295,10 +306,11 @@ export default function CustomerOrderPage() {
           {categories.map((cat) => (
             <button
               key={cat.id}
-              className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${activeCategory === cat.id
-                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 scale-105"
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
-                }`}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+                activeCategory === cat.id
+                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 scale-105"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+              }`}
               onClick={() => setActiveCategory(cat.id)}
             >
               {cat.name}
@@ -445,10 +457,7 @@ export default function CustomerOrderPage() {
                     return (
                       <div
                         key={id}
-                        className={`flex justify-between items-center py-3 px-2 ${index !== arr.length - 1
-                          ? "border-b border-dashed border-slate-200"
-                          : ""
-                          }`}
+                        className={`flex justify-between items-center py-3 px-2 ${index !== arr.length - 1 ? "border-b border-dashed border-slate-200" : ""}`}
                       >
                         <div className="flex-1 pr-2">
                           <p className="font-bold text-slate-800 text-sm leading-tight">

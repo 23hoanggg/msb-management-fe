@@ -35,6 +35,19 @@ const deleteCookie = (name: string) => {
   }
 };
 
+// Tạo mảng chứa các Link để render tự động
+const NAV_LINKS = [
+  { href: "/", label: "Sơ đồ phòng", icon: LayoutDashboard },
+  { isDivider: true, label: "Quản lý" },
+  { href: "/menu", label: "Thực đơn dịch vụ", icon: Coffee },
+  { href: "/room-types", label: "Loại phòng hát", icon: Crown },
+  { href: "/manage-rooms", label: "Danh sách phòng", icon: DoorOpen },
+  { href: "/history", label: "Lịch sử hóa đơn", icon: ReceiptText },
+  { href: "/discounts", label: "Khuyến mãi", icon: TicketPercent },
+  { href: "/staff", label: "Quản lý Nhân sự", icon: Users },
+  { href: "/reports", label: "Báo cáo thống kê", icon: BarChart3 },
+];
+
 export default function DashboardLayout({
   children,
 }: {
@@ -46,7 +59,7 @@ export default function DashboardLayout({
   const [userName, setUserName] = useState<string>("Nhân viên");
   const [userRole, setUserRole] = useState<string>("");
 
-  // 1. KIỂM TRA BẢO MẬT & LẤY THÔNG TIN USER
+  // KIỂM TRA BẢO MẬT & LẤY THÔNG TIN USER
   useEffect(() => {
     setIsMounted(true);
 
@@ -94,89 +107,71 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      <aside className="w-64 border-r bg-card hidden md:flex flex-col shrink-0">
-        <div className="h-16 flex items-center px-6 border-b shrink-0">
-          <h1 className="text-xl font-bold text-primary tracking-wider">
+      {/* SIDEBAR */}
+      <aside className="w-64 border-r bg-card hidden md:flex flex-col shrink-0 z-20 shadow-sm">
+        {/*Bấm vào Logo nhảy về trang chủ */}
+        <Link
+          href="/"
+          className="h-16 flex items-center px-6 border-b shrink-0 hover:bg-muted/50 transition-colors group cursor-pointer"
+        >
+          <h1 className="text-xl font-bold text-primary tracking-wider group-hover:scale-105 transition-transform duration-300">
             Music Box
           </h1>
-        </div>
+        </Link>
 
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          <Link
-            href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted hover:text-primary transition-colors font-medium"
-          >
-            <LayoutDashboard className="w-5 h-5" /> Sơ đồ phòng
-          </Link>
+        {/* MENU RENDER TỰ ĐỘNG */}
+        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+          {NAV_LINKS.map((item, index) => {
+            // Hiển thị dải phân cách (Divider)
+            if (item.isDivider) {
+              return (
+                <div key={`divider-${index}`} className="pt-4 pb-1">
+                  <p className="text-[11px] font-black text-muted-foreground uppercase tracking-widest px-3">
+                    {item.label}
+                  </p>
+                </div>
+              );
+            }
 
-          <div className="pt-4 pb-2">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-3">
-              Quản lý
-            </p>
-          </div>
+            //  Logic xác định tab đang active
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(item.href as string));
 
-          <Link
-            href="/menu"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted hover:text-primary transition-colors font-medium"
-          >
-            <Coffee className="w-5 h-5" /> Thực đơn dịch vụ
-          </Link>
+            const Icon = item.icon!;
 
-          <Link
-            href="/room-types"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted hover:text-primary transition-colors font-medium"
-          >
-            <Crown className="w-5 h-5" /> Loại phòng hát
-          </Link>
-
-          <Link
-            href="/manage-rooms"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted hover:text-primary transition-colors font-medium"
-          >
-            <DoorOpen className="w-5 h-5" /> Danh sách phòng
-          </Link>
-          <Link
-            href="/history"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted text-foreground"
-          >
-            <ReceiptText className="w-5 h-5" />
-            Lịch sử hóa đơn
-          </Link>
-          <Link
-            href="/discounts"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted hover:text-primary transition-colors font-medium"
-          >
-            <TicketPercent className="w-5 h-5" /> Khuyến mãi
-          </Link>
-
-          <Link
-            href="/staff"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted hover:text-primary transition-colors font-medium"
-          >
-            <Users className="w-5 h-5" /> Quản lý Nhân sự
-          </Link>
-
-          <Link
-            href="/reports"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted hover:text-primary transition-colors font-medium"
-          >
-            <BarChart3 className="w-5 h-5" /> Báo cáo thống kê
-          </Link>
+            return (
+              <Link
+                key={item.href}
+                href={item.href as string}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                  isActive
+                    ? "bg-primary/10 text-primary shadow-sm" // Nổi bật mục đang chọn
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground" // Mục bình thường
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""}`} />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
+        {/* NÚT ĐĂNG XUẤT */}
         <div className="p-4 border-t shrink-0">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-red-500 hover:bg-red-500/10 transition-colors font-medium"
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 transition-all font-medium"
           >
             <LogOut className="w-5 h-5" /> Đăng xuất
           </button>
         </div>
       </aside>
 
+      {/* NỘI DUNG CHÍNH (RIGHT SIDE) */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 border-b bg-card flex items-center justify-between px-8 shrink-0 shadow-sm z-10">
-          <div className="font-medium text-lg text-foreground">
+          <div className="font-medium text-lg text-foreground tracking-wide">
             HỆ THỐNG QUẢN LÝ
           </div>
           <div className="flex items-center gap-6">
@@ -185,14 +180,16 @@ export default function DashboardLayout({
                 <p className="text-sm font-bold leading-none mb-1 text-foreground">
                   {userName}
                 </p>
-                <p className="text-xs text-muted-foreground leading-none">
+                <p className="text-xs text-muted-foreground leading-none font-medium">
                   {userRole}
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-inner">
                 <UserCircle className="w-6 h-6" />
               </div>
             </div>
+
+            {/*Chuông thông báo Real-time */}
             <NotificationBell />
 
             <ModeToggle />
@@ -200,7 +197,7 @@ export default function DashboardLayout({
         </header>
 
         <main className="flex-1 overflow-y-auto bg-muted/20">
-          <div className="p-8">{children}</div>
+          <div className="p-8 max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
     </div>
