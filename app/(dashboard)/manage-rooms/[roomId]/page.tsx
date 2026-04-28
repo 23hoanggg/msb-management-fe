@@ -32,7 +32,6 @@ import { io, Socket } from "socket.io-client";
 import { QRCodeSVG } from "qrcode.react";
 import { useReactToPrint } from "react-to-print";
 
-// 🟢 ĐÃ SỬA: Thêm imageUrl vào interface để hết lỗi gạch đỏ
 interface Product {
   id: string;
   name: string;

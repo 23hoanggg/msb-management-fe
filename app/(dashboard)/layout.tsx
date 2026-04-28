@@ -109,11 +109,11 @@ export default function DashboardLayout({
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       {/* SIDEBAR */}
       <aside className="w-64 border-r bg-card hidden md:flex flex-col shrink-0 z-20 shadow-sm">
-        {/*Bấm vào Logo nhảy về trang chủ */}
         <Link
           href="/"
           className="h-16 flex items-center px-6 border-b shrink-0 hover:bg-muted/50 transition-colors group cursor-pointer"
         >
+          <img src="/icon.png" alt="Logo" className="w-10 h-10 mr-3" />
           <h1 className="text-xl font-bold text-primary tracking-wider group-hover:scale-105 transition-transform duration-300">
             Music Box
           </h1>
@@ -122,7 +122,6 @@ export default function DashboardLayout({
         {/* MENU RENDER TỰ ĐỘNG */}
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
           {NAV_LINKS.map((item, index) => {
-            // Hiển thị dải phân cách (Divider)
             if (item.isDivider) {
               return (
                 <div key={`divider-${index}`} className="pt-4 pb-1">
