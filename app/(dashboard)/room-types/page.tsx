@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,123 +21,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Plus, Search, Pencil, Trash2, Loader2, Crown } from "lucide-react";
-import { toast } from "sonner";
 
-interface RoomType {
-  id: string;
-  name: string;
-  basePrice: number;
-  description: string | null;
-}
+// IMPORT HOOK LOGIC
+import { useRoomTypes } from "@/hooks/useRoomTypes";
 
 export default function RoomTypeManagementPage() {
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const { states, computed, setters, actions } = useRoomTypes();
 
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    basePrice: 0,
-    description: "",
-  });
-
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/room-types");
-      setRoomTypes(res.data?.data || res.data || []);
-    } catch (error) {
-      toast.error("Không thể tải dữ liệu loại phòng!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredRoomTypes = roomTypes.filter((rt) =>
-    rt.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  // --- XỬ LÝ FORM THÊM / SỬA ---
-  const handleOpenCreateForm = () => {
-    setEditingId(null);
-    setFormData({
-      name: "",
-      basePrice: 0,
-      description: "",
-    });
-    setIsFormModalOpen(true);
-  };
-
-  const handleOpenEditForm = (roomType: RoomType) => {
-    setEditingId(roomType.id);
-    setFormData({
-      name: roomType.name,
-      basePrice: roomType.basePrice,
-      description: roomType.description || "",
-    });
-    setIsFormModalOpen(true);
-  };
-
-  const handleSubmitForm = async () => {
-    if (!formData.name.trim())
-      return toast.error("Vui lòng nhập tên loại phòng!");
-    if (formData.basePrice < 0) return toast.error("Giá phòng không được âm!");
-
-    try {
-      setIsSubmitting(true);
-      const payload = {
-        name: formData.name,
-        basePrice: Number(formData.basePrice),
-        description: formData.description,
-      };
-
-      if (editingId) {
-        await api.patch(`/room-types/${editingId}`, payload);
-        toast.success("Cập nhật loại phòng thành công!");
-      } else {
-        await api.post("/room-types", payload);
-        toast.success("Thêm loại phòng mới thành công!");
-      }
-
-      setIsFormModalOpen(false);
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi lưu!");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // --- XỬ LÝ XÓA ---
-  const handleConfirmDelete = async () => {
-    if (!deletingId) return;
-    try {
-      setIsSubmitting(true);
-      await api.delete(`/room-types/${deletingId}`);
-      toast.success("Đã xóa loại phòng thành công!");
-      setIsDeleteModalOpen(false);
-      fetchData();
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.message ||
-          "Không thể xóa vì đang có phòng thuộc loại này!",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (loading)
+  if (states.loading)
     return (
       <div className="flex justify-center items-center h-[calc(100vh-100px)]">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -148,6 +37,7 @@ export default function RoomTypeManagementPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
@@ -158,33 +48,32 @@ export default function RoomTypeManagementPage() {
           </p>
         </div>
         <Button
-          onClick={handleOpenCreateForm}
+          onClick={actions.handleOpenCreateForm}
           className="bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
         >
           <Plus className="w-5 h-5 mr-2" /> Thêm loại phòng
         </Button>
       </div>
+
       {/* KHU VỰC BẢNG DỮ LIỆU */}
       <Card className="border-border bg-card text-card-foreground shadow-sm">
         <CardHeader className="border-b border-border bg-muted/20 pb-4">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <CardTitle className="text-xl flex items-center gap-2">
-              <Crown className="w-5 h-5 text-primary" />
-              Danh sách loại phòng ({filteredRoomTypes.length})
+              <Crown className="w-5 h-5 text-primary" /> Danh sách loại phòng (
+              {computed.filteredRoomTypes.length})
             </CardTitle>
-
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Tìm tên loại phòng..."
                 className="pl-9 bg-background border-input focus-visible:ring-primary"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={states.searchTerm}
+                onChange={(e) => setters.setSearchTerm(e.target.value)}
               />
             </div>
           </div>
         </CardHeader>
-
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -205,7 +94,7 @@ export default function RoomTypeManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRoomTypes.length === 0 ? (
+                {computed.filteredRoomTypes.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={4}
@@ -215,7 +104,7 @@ export default function RoomTypeManagementPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRoomTypes.map((item) => (
+                  computed.filteredRoomTypes.map((item) => (
                     <TableRow
                       key={item.id}
                       className="border-border hover:bg-muted/30 transition-colors"
@@ -238,21 +127,19 @@ export default function RoomTypeManagementPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/50"
-                            onClick={() => handleOpenEditForm(item)}
-                            title="Sửa"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                            onClick={() => actions.handleOpenEditForm(item)}
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-100"
                             onClick={() => {
-                              setDeletingId(item.id);
-                              setIsDeleteModalOpen(true);
+                              setters.setDeletingId(item.id);
+                              setters.setIsDeleteModalOpen(true);
                             }}
-                            title="Xóa"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -266,16 +153,21 @@ export default function RoomTypeManagementPage() {
           </div>
         </CardContent>
       </Card>
+
       {/* MODAL THÊM / SỬA */}
-      <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
+      <Dialog
+        open={states.isFormModalOpen}
+        onOpenChange={setters.setIsFormModalOpen}
+      >
         <DialogContent className="sm:max-w-[425px] bg-background border-border">
           <DialogHeader>
             <DialogTitle className="text-xl text-foreground flex items-center gap-2">
-              <Crown className="w-5 h-5 text-primary" />
-              {editingId ? "Chỉnh sửa loại phòng" : "Thêm loại phòng mới"}
+              <Crown className="w-5 h-5 text-primary" />{" "}
+              {states.editingId
+                ? "Chỉnh sửa loại phòng"
+                : "Thêm loại phòng mới"}
             </DialogTitle>
           </DialogHeader>
-
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
@@ -285,13 +177,15 @@ export default function RoomTypeManagementPage() {
               <Input
                 placeholder="Nhập tên loại phòng..."
                 className="bg-background border-input font-bold"
-                value={formData.name}
+                value={states.formData.name}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+                  setters.setFormData({
+                    ...states.formData,
+                    name: e.target.value,
+                  })
                 }
               />
             </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 Giá gốc mỗi giờ hát (VNĐ){" "}
@@ -302,16 +196,15 @@ export default function RoomTypeManagementPage() {
                 min="0"
                 step="1000"
                 className="bg-background border-input font-bold text-primary text-lg"
-                value={formData.basePrice}
+                value={states.formData.basePrice}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
+                  setters.setFormData({
+                    ...states.formData,
                     basePrice: Number(e.target.value),
                   })
                 }
               />
             </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 Mô tả thêm
@@ -319,37 +212,43 @@ export default function RoomTypeManagementPage() {
               <Input
                 placeholder="VD: Phòng chứa tối đa 10 người..."
                 className="bg-background border-input"
-                value={formData.description}
+                value={states.formData.description}
                 onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
+                  setters.setFormData({
+                    ...states.formData,
+                    description: e.target.value,
+                  })
                 }
               />
             </div>
           </div>
-
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsFormModalOpen(false)}
+              onClick={() => setters.setIsFormModalOpen(false)}
               className="border-input text-foreground hover:bg-muted"
             >
               Hủy
             </Button>
             <Button
-              onClick={handleSubmitForm}
-              disabled={isSubmitting}
+              onClick={actions.handleSubmitForm}
+              disabled={states.isSubmitting}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {isSubmitting && (
+              {states.isSubmitting && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
-              {editingId ? "Lưu thay đổi" : "Tạo loại phòng"}
+              )}{" "}
+              {states.editingId ? "Lưu thay đổi" : "Tạo loại phòng"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {/* MODAL XÓA */}
-      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+      <Dialog
+        open={states.isDeleteModalOpen}
+        onOpenChange={setters.setIsDeleteModalOpen}
+      >
         <DialogContent className="sm:max-w-[400px] bg-background border-border">
           <DialogHeader>
             <DialogTitle className="text-red-600 flex items-center gap-2">
@@ -363,16 +262,16 @@ export default function RoomTypeManagementPage() {
           <DialogFooter className="mt-4">
             <Button
               variant="outline"
-              onClick={() => setIsDeleteModalOpen(false)}
+              onClick={() => setters.setIsDeleteModalOpen(false)}
             >
               Hủy
             </Button>
             <Button
               variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={isSubmitting}
+              onClick={actions.handleConfirmDelete}
+              disabled={states.isSubmitting}
             >
-              {isSubmitting ? (
+              {states.isSubmitting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 "Xóa vĩnh viễn"

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
@@ -61,12 +62,17 @@ export default function NotificationBell() {
     });
 
     socket.on("new-order", (data: any) => {
+      // 🟢 1. BỘ LỌC NGUỒN (Lọc tiếng vọng)
+      // Nếu dữ liệu báo đây là do Thu Ngân (STAFF) gọi, thì DỪNG LẠI, không thông báo gì cả.
+      if (data?.source === "STAFF") {
+        return;
+      }
+
       const now = Date.now();
       const roomId = data?.roomId || "";
       const roomName = data?.roomName || "Khách";
       const message = data?.message || "Khách hàng vừa lên đơn mới.";
 
-      // 🟢 Nếu cách lần kêu cuối cùng hơn 1.5 giây thì mới kêu tiếp (Chống spam)
       if (now - lastSoundPlayedRef.current > 1500) {
         playNotificationSound();
         toast.success(`Phòng ${roomName} đang gọi món!`, {
@@ -75,14 +81,14 @@ export default function NotificationBell() {
           action: roomId
             ? {
                 label: "Xem ngay",
-                onClick: () => router.push(`/manage-rooms/${roomId}`),
+                // 🟢 2. SỬA ĐỊNH TUYẾN 1: Đổi thành /room/
+                onClick: () => router.push(`/room/${roomId}`),
               }
             : undefined,
         });
         lastSoundPlayedRef.current = now;
       }
 
-      // Vẫn lưu vào danh sách chuông đầy đủ
       const newNotif: NotificationItem = {
         id: Date.now().toString() + Math.random().toString(36).substring(7),
         roomId: roomId,
@@ -116,7 +122,6 @@ export default function NotificationBell() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
   const handleNotifClick = (notif: NotificationItem) => {
     const updated = notifications.map((n) =>
       n.id === notif.id ? { ...n, isRead: true } : n,
@@ -124,7 +129,9 @@ export default function NotificationBell() {
     setNotifications(updated);
     localStorage.setItem("msb_notifications_v3", JSON.stringify(updated));
     setIsOpen(false);
-    if (notif.roomId) router.push(`/manage-rooms/${notif.roomId}`);
+
+    // 🟢 3. SỬA ĐỊNH TUYẾN 2: Đổi thành /room/
+    if (notif.roomId) router.push(`/room/${notif.roomId}`);
   };
 
   const markAllAsRead = () => {

@@ -12,6 +12,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// CHIỀU ĐI: Tự động gắn thẻ (Token) vào mọi Request
 api.interceptors.request.use((config) => {
   const token = Cookies.get("token");
   if (token) {
@@ -19,5 +20,23 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// CHIỀU VỀ: Lắng nghe phản hồi từ Server
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      Cookies.remove("token");
+      localStorage.removeItem("user");
+
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default api;

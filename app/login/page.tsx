@@ -1,14 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import Cookies from "js-cookie";
-import api from "@/lib/api";
-
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -28,6 +23,8 @@ import {
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
+import { useAuth } from "@/hooks/useAuth";
+
 const loginSchema = z.object({
   username: z
     .string()
@@ -36,8 +33,7 @@ const loginSchema = z.object({
 });
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { isLoading, errorMsg, login } = useAuth();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -45,41 +41,17 @@ export default function LoginPage() {
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    try {
-      setIsLoading(true);
-
-      const response = await api.post("/auth/login", values);
-      const tokenToSave = response.data.access_token;
-
-      if (!tokenToSave) {
-        form.setError("root", { message: "Backend vẫn chưa trả về token!" });
-        setIsLoading(false);
-        return;
-      }
-
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-
-      Cookies.set("token", tokenToSave, { expires: 1 });
-
-      router.push("/");
-    } catch (error: any) {
-      console.error(error);
-      form.setError("root", {
-        message:
-          error.response?.data?.message ||
-          "Tài khoản hoặc mật khẩu không đúng!",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await login(values);
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md shadow-xl border-primary/20">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Music Box</CardTitle>
-          <CardDescription>Đăng nhập để vào hệ thống quản lý</CardDescription>
+          <CardTitle className="text-3xl font-black text-primary uppercase tracking-wider">
+            Music Box
+          </CardTitle>
+          <CardDescription>Đăng nhập hệ thống quản trị</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -89,10 +61,10 @@ export default function LoginPage() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tên đăng nhập</FormLabel>
+                    <FormLabel className="font-bold">Tên đăng nhập</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Nhập username của bạn..."
+                        placeholder="Nhập username..."
                         {...field}
                         disabled={isLoading}
                       />
@@ -107,7 +79,7 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mật khẩu</FormLabel>
+                    <FormLabel className="font-bold">Mật khẩu</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -121,14 +93,18 @@ export default function LoginPage() {
                 )}
               />
 
-              {form.formState.errors.root && (
-                <p className="text-sm font-medium text-destructive text-center">
-                  {form.formState.errors.root.message}
-                </p>
+              {errorMsg && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm font-medium border border-red-200 text-center">
+                  {errorMsg}
+                </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button
+                type="submit"
+                className="w-full font-bold text-md h-12 bg-primary hover:bg-primary/90"
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 {isLoading ? "Đang xử lý..." : "Đăng nhập"}
               </Button>
             </form>

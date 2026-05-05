@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,206 +30,14 @@ import {
   Lock,
   Unlock,
 } from "lucide-react";
-import { toast } from "sonner";
 
-interface Discount {
-  id: string;
-  code: string;
-  description: string;
-  percent: number;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-}
+// IMPORT HOOK LOGIC
+import { useDiscounts } from "@/hooks/useDiscounts";
 
 export default function DiscountManagementPage() {
-  const [discounts, setDiscounts] = useState<Discount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const { states, computed, setters, actions, helpers } = useDiscounts();
 
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    code: "",
-    description: "",
-    percent: 0,
-    startDate: "",
-    endDate: "",
-    isActive: true,
-  });
-
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/discounts");
-      setDiscounts(res.data?.data || res.data || []);
-    } catch (error) {
-      toast.error("Không thể tải dữ liệu khuyến mãi!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredDiscounts = discounts.filter(
-    (d) =>
-      d.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (d.description &&
-        d.description.toLowerCase().includes(searchTerm.toLowerCase())),
-  );
-
-  const formatForInput = (isoString: string) => {
-    if (!isoString) return "";
-    const date = new Date(isoString);
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-  };
-
-  // --- HÀM TÍNH TRẠNG THÁI HIỂN THỊ ---
-  const getDiscountStatus = (discount: Discount) => {
-    if (!discount.isActive)
-      return {
-        label: "Đã khóa",
-        color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
-      };
-
-    const now = new Date();
-    const start = new Date(discount.startDate);
-    const end = new Date(discount.endDate);
-
-    if (now < start)
-      return {
-        label: "Sắp tới",
-        color:
-          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-      };
-    if (now > end)
-      return {
-        label: "Hết hạn",
-        color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-      };
-
-    return {
-      label: "Đang diễn ra",
-      color:
-        "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    };
-  };
-
-  // --- XỬ LÝ FORM THÊM / SỬA ---
-  const handleOpenCreateForm = () => {
-    setEditingId(null);
-    setFormData({
-      code: "",
-      description: "",
-      percent: 0,
-      startDate: formatForInput(new Date().toISOString()),
-      endDate: formatForInput(
-        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      ),
-      isActive: true,
-    });
-    setIsFormModalOpen(true);
-  };
-
-  const handleOpenEditForm = (discount: Discount) => {
-    setEditingId(discount.id);
-    setFormData({
-      code: discount.code,
-      description: discount.description || "",
-      percent: discount.percent,
-      startDate: formatForInput(discount.startDate),
-      endDate: formatForInput(discount.endDate),
-      isActive: discount.isActive,
-    });
-    setIsFormModalOpen(true);
-  };
-
-  const handleSubmitForm = async () => {
-    if (!formData.code.trim())
-      return toast.error("Vui lòng nhập mã khuyến mãi!");
-    if (formData.percent <= 0 || formData.percent > 100)
-      return toast.error("Phần trăm giảm phải từ 1 đến 100!");
-    if (!formData.startDate || !formData.endDate)
-      return toast.error("Vui lòng chọn ngày bắt đầu và kết thúc!");
-
-    const start = new Date(formData.startDate);
-    const end = new Date(formData.endDate);
-    if (end <= start)
-      return toast.error("Ngày kết thúc phải lớn hơn ngày bắt đầu!");
-
-    try {
-      setIsSubmitting(true);
-      const payload = {
-        code: formData.code.toUpperCase().trim(),
-        description: formData.description,
-        percent: Number(formData.percent),
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
-        isActive: formData.isActive,
-      };
-
-      if (editingId) {
-        await api.patch(`/discounts/${editingId}`, payload);
-        toast.success("Cập nhật mã thành công!");
-      } else {
-        await api.post("/discounts", payload);
-        toast.success("Thêm mã mới thành công!");
-      }
-
-      setIsFormModalOpen(false);
-      fetchData();
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.message ||
-        "Có lỗi xảy ra (Có thể mã đã tồn tại)!",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // --- KHÓA / MỞ KHÓA NHANH ---
-  const handleToggleActive = async (discount: Discount) => {
-    try {
-      await api.patch(`/discounts/${discount.id}`, {
-        isActive: !discount.isActive,
-      });
-      toast.success(discount.isActive ? "Đã khóa mã!" : "Đã mở khóa mã!");
-      fetchData();
-    } catch (error) {
-      toast.error("Lỗi khi thay đổi trạng thái!");
-    }
-  };
-
-  // --- XỬ LÝ XÓA ---
-  const handleConfirmDelete = async () => {
-    if (!deletingId) return;
-    try {
-      setIsSubmitting(true);
-      await api.delete(`/discounts/${deletingId}`);
-      toast.success("Đã xóa mã khuyến mãi thành công!");
-      setIsDeleteModalOpen(false);
-      fetchData();
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.message ||
-        "Không thể xóa vì mã này đã được sử dụng trong hóa đơn!",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (loading)
+  if (states.loading)
     return (
       <div className="flex justify-center items-center h-[calc(100vh-100px)]">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -240,6 +46,7 @@ export default function DiscountManagementPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
@@ -250,28 +57,28 @@ export default function DiscountManagementPage() {
           </p>
         </div>
         <Button
-          onClick={handleOpenCreateForm}
+          onClick={actions.handleOpenCreateForm}
           className="bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
         >
           <Plus className="w-5 h-5 mr-2" /> Tạo mã giảm giá
         </Button>
       </div>
 
+      {/* KHU VỰC BẢNG DỮ LIỆU */}
       <Card className="border-border bg-card text-card-foreground shadow-sm">
         <CardHeader className="border-b border-border bg-muted/20 pb-4">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <CardTitle className="text-xl flex items-center gap-2">
-              <TicketPercent className="w-5 h-5 text-primary" />
-              Danh sách mã giảm giá ({filteredDiscounts.length})
+              <TicketPercent className="w-5 h-5 text-primary" /> Danh sách mã
+              giảm giá ({computed.filteredDiscounts.length})
             </CardTitle>
-
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Tìm mã hoặc mô tả..."
                 className="pl-9 bg-background border-input focus-visible:ring-primary uppercase"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={states.searchTerm}
+                onChange={(e) => setters.setSearchTerm(e.target.value)}
               />
             </div>
           </div>
@@ -303,7 +110,7 @@ export default function DiscountManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDiscounts.length === 0 ? (
+                {computed.filteredDiscounts.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -313,8 +120,8 @@ export default function DiscountManagementPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredDiscounts.map((item) => {
-                    const status = getDiscountStatus(item);
+                  computed.filteredDiscounts.map((item) => {
+                    const status = helpers.getDiscountStatus(item);
                     return (
                       <TableRow
                         key={item.id}
@@ -330,7 +137,7 @@ export default function DiscountManagementPage() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-center font-bold text-red-600 dark:text-red-400 text-lg">
+                        <TableCell className="text-center font-bold text-red-600 text-lg">
                           {item.percent}%
                         </TableCell>
                         <TableCell className="text-center text-sm text-muted-foreground space-y-1">
@@ -356,16 +163,15 @@ export default function DiscountManagementPage() {
                         </TableCell>
                         <TableCell className="text-right pr-4">
                           <div className="flex justify-end gap-1">
-                            {/* Nút Khóa / Mở khóa nhanh */}
                             <Button
                               variant="ghost"
                               size="icon"
                               className={
                                 item.isActive
-                                  ? "text-orange-500 hover:text-orange-600 hover:bg-orange-100"
-                                  : "text-green-600 hover:text-green-700 hover:bg-green-100"
+                                  ? "text-orange-500 hover:bg-orange-100"
+                                  : "text-green-600 hover:bg-green-100"
                               }
-                              onClick={() => handleToggleActive(item)}
+                              onClick={() => actions.handleToggleActive(item)}
                               title={
                                 item.isActive ? "Khóa mã này" : "Mở khóa mã này"
                               }
@@ -379,8 +185,8 @@ export default function DiscountManagementPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/50"
-                              onClick={() => handleOpenEditForm(item)}
+                              className="text-blue-600 hover:bg-blue-100"
+                              onClick={() => actions.handleOpenEditForm(item)}
                               title="Sửa"
                             >
                               <Pencil className="w-4 h-4" />
@@ -388,10 +194,10 @@ export default function DiscountManagementPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/50"
+                              className="text-red-600 hover:bg-red-100"
                               onClick={() => {
-                                setDeletingId(item.id);
-                                setIsDeleteModalOpen(true);
+                                setters.setDeletingId(item.id);
+                                setters.setIsDeleteModalOpen(true);
                               }}
                               title="Xóa"
                             >
@@ -410,15 +216,19 @@ export default function DiscountManagementPage() {
       </Card>
 
       {/* MODAL THÊM / SỬA MÃ */}
-      <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
+      <Dialog
+        open={states.isFormModalOpen}
+        onOpenChange={setters.setIsFormModalOpen}
+      >
         <DialogContent className="sm:max-w-[500px] bg-background border-border">
           <DialogHeader>
             <DialogTitle className="text-xl text-foreground flex items-center gap-2">
-              <TicketPercent className="w-5 h-5 text-primary" />
-              {editingId ? "Chỉnh sửa mã giảm giá" : "Tạo mã giảm giá mới"}
+              <TicketPercent className="w-5 h-5 text-primary" />{" "}
+              {states.editingId
+                ? "Chỉnh sửa mã giảm giá"
+                : "Tạo mã giảm giá mới"}
             </DialogTitle>
           </DialogHeader>
-
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -428,9 +238,12 @@ export default function DiscountManagementPage() {
                 <Input
                   placeholder="VD: VIP2026"
                   className="bg-background border-input uppercase font-bold text-primary"
-                  value={formData.code}
+                  value={states.formData.code}
                   onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
+                    setters.setFormData({
+                      ...states.formData,
+                      code: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -443,17 +256,16 @@ export default function DiscountManagementPage() {
                   min="1"
                   max="100"
                   className="bg-background border-input font-bold text-red-500"
-                  value={formData.percent}
+                  value={states.formData.percent}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
+                    setters.setFormData({
+                      ...states.formData,
                       percent: Number(e.target.value),
                     })
                   }
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 Mô tả chương trình
@@ -461,13 +273,15 @@ export default function DiscountManagementPage() {
               <Input
                 placeholder="VD: Giảm giá ngày khai trương..."
                 className="bg-background border-input"
-                value={formData.description}
+                value={states.formData.description}
                 onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
+                  setters.setFormData({
+                    ...states.formData,
+                    description: e.target.value,
+                  })
                 }
               />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
@@ -476,9 +290,12 @@ export default function DiscountManagementPage() {
                 <Input
                   type="datetime-local"
                   className="bg-background border-input"
-                  value={formData.startDate}
+                  value={states.formData.startDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
+                    setters.setFormData({
+                      ...states.formData,
+                      startDate: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -489,14 +306,16 @@ export default function DiscountManagementPage() {
                 <Input
                   type="datetime-local"
                   className="bg-background border-input"
-                  value={formData.endDate}
+                  value={states.formData.endDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, endDate: e.target.value })
+                    setters.setFormData({
+                      ...states.formData,
+                      endDate: e.target.value,
+                    })
                   }
                 />
               </div>
             </div>
-
             <div className="flex items-center justify-between p-3 border rounded-md mt-2 bg-muted/20">
               <div className="space-y-0.5">
                 <label className="text-sm font-medium text-foreground">
@@ -507,43 +326,50 @@ export default function DiscountManagementPage() {
                 </p>
               </div>
               <Button
-                variant={formData.isActive ? "default" : "secondary"}
+                variant={states.formData.isActive ? "default" : "secondary"}
                 className={
-                  formData.isActive ? "bg-green-600 hover:bg-green-700" : ""
+                  states.formData.isActive
+                    ? "bg-green-600 hover:bg-green-700"
+                    : ""
                 }
                 onClick={() =>
-                  setFormData({ ...formData, isActive: !formData.isActive })
+                  setters.setFormData({
+                    ...states.formData,
+                    isActive: !states.formData.isActive,
+                  })
                 }
               >
-                {formData.isActive ? "Đang Bật" : "Đang Tắt"}
+                {states.formData.isActive ? "Đang Bật" : "Đang Tắt"}
               </Button>
             </div>
           </div>
-
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsFormModalOpen(false)}
+              onClick={() => setters.setIsFormModalOpen(false)}
               className="border-input text-foreground hover:bg-muted"
             >
               Hủy
             </Button>
             <Button
-              onClick={handleSubmitForm}
-              disabled={isSubmitting}
+              onClick={actions.handleSubmitForm}
+              disabled={states.isSubmitting}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {isSubmitting && (
+              {states.isSubmitting && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
-              {editingId ? "Lưu thay đổi" : "Tạo mã"}
+              )}{" "}
+              {states.editingId ? "Lưu thay đổi" : "Tạo mã"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* MODAL XÓA */}
-      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+      <Dialog
+        open={states.isDeleteModalOpen}
+        onOpenChange={setters.setIsDeleteModalOpen}
+      >
         <DialogContent className="sm:max-w-[400px] bg-background border-border">
           <DialogHeader>
             <DialogTitle className="text-red-600 flex items-center gap-2">
@@ -556,16 +382,16 @@ export default function DiscountManagementPage() {
           <DialogFooter className="mt-4">
             <Button
               variant="outline"
-              onClick={() => setIsDeleteModalOpen(false)}
+              onClick={() => setters.setIsDeleteModalOpen(false)}
             >
               Hủy
             </Button>
             <Button
               variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={isSubmitting}
+              onClick={actions.handleConfirmDelete}
+              disabled={states.isSubmitting}
             >
-              {isSubmitting ? (
+              {states.isSubmitting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 "Xóa vĩnh viễn"

@@ -1,110 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { io, Socket } from "socket.io-client";
 import { QRCodeSVG } from "qrcode.react";
 import { Mic2, Sparkles, Wrench, Music4 } from "lucide-react";
 
-interface Room {
-  id: string;
-  name: string;
-  status: "AVAILABLE" | "OCCUPIED" | "REPAIRING";
-}
+import { useTvScreen } from "@/hooks/useTvScreen";
 
 export default function TvScreenPage() {
   const params = useParams();
   const urlRoomIdentifier = params.roomId as string;
 
-  const [room, setRoom] = useState<Room | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const { states } = useTvScreen(urlRoomIdentifier);
 
-  useEffect(() => {
-    const initializeTv = async () => {
-      try {
-        const rawUrl =
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
-        const BACKEND_URL = rawUrl.replace(/\/$/, "");
-
-        const roomsRes = await fetch(`${BACKEND_URL}/api/rooms`);
-        const roomsData = await roomsRes.json();
-        const roomsList = roomsData.data || roomsData || [];
-
-        const currentRoom = roomsList.find(
-          (r: any) =>
-            r.id === urlRoomIdentifier ||
-            r.name.toLowerCase() === urlRoomIdentifier.toLowerCase(),
-        );
-        if (currentRoom) {
-          setRoom(currentRoom);
-          const BACKEND_URL =
-            process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
-          const sessionRes = await fetch(
-            `${BACKEND_URL}/api/room-sessions/active`,
-          );
-          const sessionData = await sessionRes.json();
-          const sessionsList = sessionData.data || sessionData || [];
-
-          const session = sessionsList.find(
-            (s: any) => s.roomId === currentRoom.id,
-          );
-          setSessionId(session ? session.id : null);
-        }
-      } catch (error) {
-        console.error("Lỗi lấy thông tin hệ thống Tivi:", error);
-      }
-    };
-
-    initializeTv();
-  }, [urlRoomIdentifier]);
-
-  useEffect(() => {
-    if (!room?.id) return;
-    const realRoomId = room.id;
-
-    const BACKEND_URL =
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
-    const socket: Socket = io(BACKEND_URL);
-
-    socket.on(
-      "room-status-changed",
-      (data: { roomId: string; status: string }) => {
-        if (data.roomId === realRoomId) {
-          setRoom((prev) =>
-            prev ? { ...prev, status: data.status as any } : prev,
-          );
-
-          if (data.status === "OCCUPIED") {
-            setTimeout(async () => {
-              try {
-                const BACKEND_URL =
-                  process.env.NEXT_PUBLIC_BACKEND_URL ||
-                  "http://localhost:3001";
-                const sessionRes = await fetch(
-                  `${BACKEND_URL}/api/room-sessions/active`,
-                );
-                const sessionData = await sessionRes.json();
-                const sessionsList = sessionData.data || sessionData || [];
-                const session = sessionsList.find(
-                  (s: any) => s.roomId === realRoomId,
-                );
-                setSessionId(session ? session.id : null);
-              } catch (e) { }
-            }, 1000);
-          } else if (data.status === "AVAILABLE") {
-            setSessionId(null);
-          }
-        }
-      },
-    );
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [room?.id]);
-
-  if (!room) {
+  // MÀN HÌNH CHỜ LOADING (Chưa lấy được thông tin phòng)
+  if (states.loading || !states.room) {
     return (
       <div className="h-screen bg-slate-950 text-slate-400 flex flex-col items-center justify-center font-sans">
         <Mic2 className="w-16 h-16 mb-4 animate-bounce text-purple-500" />
@@ -116,9 +26,10 @@ export default function TvScreenPage() {
     );
   }
 
-  // GIAO DIỆN TIVI
+  // GIAO DIỆN TIVI CHÍNH
   return (
     <div className="h-screen w-screen overflow-hidden bg-slate-950 text-white flex flex-col font-sans relative selection:bg-transparent">
+      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="absolute bottom-[10%] -right-[10%] w-[40%] h-[50%] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none"></div>
@@ -141,14 +52,14 @@ export default function TvScreenPage() {
         </div>
         <div className="text-right">
           <h2 className="text-5xl font-black tracking-wider uppercase">
-            {room.name}
+            {states.room.name}
           </h2>
         </div>
       </div>
 
       {/* Nội dung chính giữa Tivi */}
       <div className="relative z-10 flex-1 flex items-center justify-center p-12">
-        {room.status === "OCCUPIED" && sessionId ? (
+        {states.room.status === "OCCUPIED" && states.sessionId ? (
           <div className="flex w-full max-w-5xl bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in duration-700">
             <div className="flex-1 p-12 flex flex-col justify-center border-r border-white/10">
               <span className="w-fit bg-green-500/20 text-green-400 border border-green-500/30 text-lg px-4 py-1 mb-6 rounded-full font-bold">
@@ -175,7 +86,7 @@ export default function TvScreenPage() {
             <div className="w-[450px] bg-white flex flex-col items-center justify-center p-10">
               <div className="p-4 bg-white rounded-2xl shadow-xl">
                 <QRCodeSVG
-                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/customer/order/${sessionId}`}
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/customer/order/${states.sessionId}`}
                   size={300}
                   level={"H"}
                   includeMargin={false}
@@ -186,7 +97,7 @@ export default function TvScreenPage() {
               </p>
             </div>
           </div>
-        ) : room.status === "AVAILABLE" ? (
+        ) : states.room.status === "AVAILABLE" ? (
           <div className="text-center animate-in fade-in duration-1000 flex flex-col items-center">
             <div className="w-40 h-40 bg-purple-500/10 rounded-full flex items-center justify-center mb-8 border border-purple-500/20">
               <Sparkles className="w-20 h-20 text-purple-400 animate-pulse" />
